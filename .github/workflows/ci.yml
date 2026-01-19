@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    name: Lint, Test & Build
+    runs-on: ubuntu-latest
+    concurrency:
+      group: ci-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set Yarn version
+        run: corepack prepare yarn@4.12.0 --activate
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+
+      - name: Cache yarn dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      - name: Check unused code
+        run: yarn knip
+
+      - name: Type Check
+        run: yarn type-check
+
+      - name: Run Tests
+        run: yarn test
+
+      - name: Build project
+        run: yarn build
+        env:
+          NODE_ENV: production
+
+      - name: Create 404.html for SPA routing
+        run: cp ./dist/index.html ./dist/404.html
+
+      - name: Upload static files as artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: ci
+    runs-on: ubuntu-latest
+    # Only deploy on push to master/main, not on PRs
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

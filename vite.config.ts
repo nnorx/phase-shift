@@ -5,9 +5,6 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
-	// Set base path for GitHub Pages deployment
-	// Use root "/" for custom domain, or "/phase-shift/" for github.io subdirectory
-	base: process.env.GITHUB_PAGES === "true" ? "/phase-shift/" : "/",
 	plugins: [
 		react({
 			babel: {

@@ -302,14 +302,21 @@ describe("gradient-utils", () => {
 			expect(typeof encoded).toBe("string");
 		});
 
-		it("should handle invalid base64 gracefully", () => {
-			const errorMessages: string[] = [];
-			const decoded = decodeGradients("not-valid-base64!!!", (msg) =>
-				errorMessages.push(msg),
-			);
-			expect(decoded).toHaveLength(0);
-			expect(errorMessages.length).toBeGreaterThan(0);
-		});
+	it("should handle invalid base64 gracefully", () => {
+		// Mock console.error to suppress expected error message
+		const originalError = console.error;
+		console.error = vi.fn();
+
+		const errorMessages: string[] = [];
+		const decoded = decodeGradients("not-valid-base64!!!", (msg) =>
+			errorMessages.push(msg),
+		);
+		expect(decoded).toHaveLength(0);
+		expect(errorMessages.length).toBeGreaterThan(0);
+
+		// Restore console.error
+		console.error = originalError;
+	});
 
 		it("should reject non-array data", () => {
 			const encoded = btoa(JSON.stringify({ not: "array" }))

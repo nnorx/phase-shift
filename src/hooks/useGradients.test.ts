@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { encodeGradients } from "@/lib/gradient-serialization";
 import type { Gradient } from "@/types/gradient";
@@ -21,6 +21,9 @@ Object.assign(navigator, {
 });
 
 describe("useGradients", () => {
+	// Store original console.error
+	const originalConsoleError = console.error;
+
 	beforeEach(() => {
 		localStorage.clear();
 		window.history.replaceState({}, "", window.location.pathname);
@@ -29,6 +32,8 @@ describe("useGradients", () => {
 
 	afterEach(() => {
 		localStorage.clear();
+		// Restore console.error after each test
+		console.error = originalConsoleError;
 	});
 
 	describe("initialization", () => {
@@ -77,6 +82,9 @@ describe("useGradients", () => {
 		});
 
 		it("should handle invalid localStorage data gracefully", async () => {
+			// Mock console.error to suppress expected error message
+			console.error = vi.fn();
+
 			localStorage.setItem("phase-shift-gradients", "invalid-json");
 
 			const { result } = renderHook(() => useGradients());
@@ -86,6 +94,10 @@ describe("useGradients", () => {
 			});
 
 			expect(result.current.gradients).toEqual([]);
+			expect(console.error).toHaveBeenCalledWith(
+				"Failed to load gradients from localStorage:",
+				expect.any(Error),
+			);
 		});
 	});
 
@@ -138,6 +150,9 @@ describe("useGradients", () => {
 		});
 
 		it("should reject invalid encoded gradients", async () => {
+			// Mock console.error to suppress expected error message
+			console.error = vi.fn();
+
 			window.history.replaceState({}, "", "?gradients=invalid-data");
 
 			const { result } = renderHook(() => useGradients());
@@ -147,6 +162,7 @@ describe("useGradients", () => {
 			});
 
 			expect(result.current.pendingImport).toBeNull();
+			expect(console.error).toHaveBeenCalled();
 		});
 	});
 
@@ -158,24 +174,27 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			const gradient = result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "multiply",
+			let gradient: ReturnType<typeof result.current.addGradient>;
+			act(() => {
+				gradient = result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "multiply",
+				});
 			});
 
-			expect(gradient).toBeDefined();
-			expect(gradient.id).toBeDefined();
-			expect(gradient.blendMode).toBe("multiply");
+			expect(gradient!).toBeDefined();
+			expect(gradient!.id).toBeDefined();
+			expect(gradient!.blendMode).toBe("multiply");
 
 			await waitFor(() => {
 				expect(result.current.gradients).toHaveLength(1);
@@ -189,39 +208,47 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			const gradient1 = result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+			let gradient1: ReturnType<typeof result.current.addGradient>;
+			let gradient2: ReturnType<typeof result.current.addGradient>;
+
+			act(() => {
+				gradient1 = result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
-			const gradient2 = result.current.addGradient({
-				colorStops: [
-					{
-						color: "#00ff00",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+
+			act(() => {
+				gradient2 = result.current.addGradient({
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
 
 			await waitFor(() => {
 				expect(result.current.gradients).toHaveLength(2);
 			});
 
-			expect(result.current.gradients[0]?.id).toBe(gradient2.id);
-			expect(result.current.gradients[1]?.id).toBe(gradient1.id);
+			expect(result.current.gradients[0]?.id).toBe(gradient2!.id);
+			expect(result.current.gradients[1]?.id).toBe(gradient1!.id);
 		});
 	});
 
@@ -233,23 +260,28 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			const gradient = result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "lighter",
+			let gradient: ReturnType<typeof result.current.addGradient>;
+			act(() => {
+				gradient = result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+				});
 			});
 
-			result.current.updateGradient(gradient.id, {
-				blendMode: "multiply",
+			act(() => {
+				result.current.updateGradient(gradient!.id, {
+					blendMode: "multiply",
+				});
 			});
 
 			await waitFor(() => {
@@ -266,25 +298,30 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			const gradient = result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+			let gradient: ReturnType<typeof result.current.addGradient>;
+			act(() => {
+				gradient = result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
 
 			await waitFor(() => {
 				expect(result.current.gradients).toHaveLength(1);
 			});
 
-			result.current.deleteGradient(gradient.id);
+			act(() => {
+				result.current.deleteGradient(gradient!.id);
+			});
 
 			await waitFor(() => {
 				expect(result.current.gradients).toHaveLength(0);
@@ -300,18 +337,20 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+			act(() => {
+				result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
 
 			await waitFor(() => {
@@ -330,19 +369,21 @@ describe("useGradients", () => {
 			});
 
 			// Add many gradients with long color stops to exceed URL length
-			for (let i = 0; i < 150; i++) {
-				result.current.addGradient({
-					colorStops: Array.from({ length: 20 }, (_, j) => ({
-						color: `#${j.toString().repeat(6).slice(0, 6)}`,
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					})),
-				});
-			}
+			act(() => {
+				for (let i = 0; i < 150; i++) {
+					result.current.addGradient({
+						colorStops: Array.from({ length: 20 }, (_, j) => ({
+							color: `#${j.toString().repeat(6).slice(0, 6)}`,
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						})),
+					});
+				}
+			});
 
 			await waitFor(() => {
 				expect(result.current.gradients.length).toBeGreaterThan(100);
@@ -361,18 +402,20 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+			act(() => {
+				result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
 
 			await waitFor(() => {
@@ -385,24 +428,29 @@ describe("useGradients", () => {
 		});
 
 		it("should handle clipboard errors", async () => {
+			// Mock console.error to suppress expected error message
+			console.error = vi.fn();
+
 			const { result } = renderHook(() => useGradients());
 
 			await waitFor(() => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			result.current.addGradient({
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
+			act(() => {
+				result.current.addGradient({
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+				});
 			});
 
 			await waitFor(() => {
@@ -416,192 +464,202 @@ describe("useGradients", () => {
 
 			const success = await result.current.copyShareUrl();
 			expect(success).toBe(false);
+			expect(console.error).toHaveBeenCalledWith(
+				"Failed to copy URL to clipboard:",
+				expect.any(Error),
+			);
 		});
 	});
 
 	describe("import handlers", () => {
-		it("should merge imported gradients", async () => {
-			const existingGradients: Gradient[] = [
-				{
-					id: "existing",
-					colorStops: [
-						{
-							color: "#ff0000",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "lighter",
-					createdAt: Date.now(),
-				},
-			];
-			localStorage.setItem(
-				"phase-shift-gradients",
-				JSON.stringify(existingGradients),
-			);
+	it("should merge imported gradients", async () => {
+		const existingGradients: Gradient[] = [
+			{
+				id: "existing",
+				colorStops: [
+					{
+						color: "#ff0000",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "lighter",
+				createdAt: Date.now(),
+			},
+		];
+		localStorage.setItem(
+			"phase-shift-gradients",
+			JSON.stringify(existingGradients),
+		);
 
-			const newGradients: Gradient[] = [
-				{
-					id: "new",
-					colorStops: [
-						{
-							color: "#00ff00",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "multiply",
-					createdAt: Date.now(),
-				},
-			];
-			const encoded = encodeGradients(newGradients);
-			window.history.replaceState({}, "", `?gradients=${encoded}`);
+		const newGradients: Gradient[] = [
+			{
+				id: "new",
+				colorStops: [
+					{
+						color: "#00ff00",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "multiply",
+				createdAt: Date.now(),
+			},
+		];
+		const encoded = encodeGradients(newGradients);
+		window.history.replaceState({}, "", `?gradients=${encoded}`);
 
-			const { result } = renderHook(() => useGradients());
+		const { result } = renderHook(() => useGradients());
 
-			await waitFor(() => {
-				expect(result.current.pendingImport).not.toBeNull();
-			});
+		await waitFor(() => {
+			expect(result.current.pendingImport).not.toBeNull();
+		});
 
+		act(() => {
 			result.current.handleImportMerge();
-
-			await waitFor(() => {
-				expect(result.current.gradients).toHaveLength(2);
-			});
-
-			expect(result.current.pendingImport).toBeNull();
 		});
 
-		it("should replace all gradients on import", async () => {
-			const existingGradients: Gradient[] = [
-				{
-					id: "existing",
-					colorStops: [
-						{
-							color: "#ff0000",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "lighter",
-					createdAt: Date.now(),
-				},
-			];
-			localStorage.setItem(
-				"phase-shift-gradients",
-				JSON.stringify(existingGradients),
-			);
+		await waitFor(() => {
+			expect(result.current.gradients).toHaveLength(2);
+		});
 
-			const newGradients: Gradient[] = [
-				{
-					id: "new",
-					colorStops: [
-						{
-							color: "#00ff00",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "multiply",
-					createdAt: Date.now(),
-				},
-			];
-			const encoded = encodeGradients(newGradients);
-			window.history.replaceState({}, "", `?gradients=${encoded}`);
+		expect(result.current.pendingImport).toBeNull();
+	});
 
-			const { result } = renderHook(() => useGradients());
+	it("should replace all gradients on import", async () => {
+		const existingGradients: Gradient[] = [
+			{
+				id: "existing",
+				colorStops: [
+					{
+						color: "#ff0000",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "lighter",
+				createdAt: Date.now(),
+			},
+		];
+		localStorage.setItem(
+			"phase-shift-gradients",
+			JSON.stringify(existingGradients),
+		);
 
-			await waitFor(() => {
-				expect(result.current.pendingImport).not.toBeNull();
-			});
+		const newGradients: Gradient[] = [
+			{
+				id: "new",
+				colorStops: [
+					{
+						color: "#00ff00",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "multiply",
+				createdAt: Date.now(),
+			},
+		];
+		const encoded = encodeGradients(newGradients);
+		window.history.replaceState({}, "", `?gradients=${encoded}`);
 
+		const { result } = renderHook(() => useGradients());
+
+		await waitFor(() => {
+			expect(result.current.pendingImport).not.toBeNull();
+		});
+
+		act(() => {
 			result.current.handleImportReplace();
+		});
 
-			await waitFor(() => {
-				expect(result.current.gradients).toHaveLength(1);
-				expect(result.current.gradients[0]?.colorStops[0]?.color).toBe(
-					"#00ff00",
-				);
-			});
+		await waitFor(() => {
+			expect(result.current.gradients).toHaveLength(1);
+			expect(result.current.gradients[0]?.colorStops[0]?.color).toBe(
+				"#00ff00",
+			);
+		});
 
+		expect(result.current.pendingImport).toBeNull();
+	});
+
+	it("should ignore imported gradients", async () => {
+		const existingGradients: Gradient[] = [
+			{
+				id: "existing",
+				colorStops: [
+					{
+						color: "#ff0000",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "lighter",
+				createdAt: Date.now(),
+			},
+		];
+		localStorage.setItem(
+			"phase-shift-gradients",
+			JSON.stringify(existingGradients),
+		);
+
+		const newGradients: Gradient[] = [
+			{
+				id: "new",
+				colorStops: [
+					{
+						color: "#00ff00",
+						x: 50,
+						y: 50,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+				blendMode: "multiply",
+				createdAt: Date.now(),
+			},
+		];
+		const encoded = encodeGradients(newGradients);
+		window.history.replaceState({}, "", `?gradients=${encoded}`);
+
+		const { result } = renderHook(() => useGradients());
+
+		await waitFor(() => {
+			expect(result.current.pendingImport).not.toBeNull();
+		});
+
+		act(() => {
+			result.current.handleImportIgnore();
+		});
+
+		await waitFor(() => {
 			expect(result.current.pendingImport).toBeNull();
 		});
 
-		it("should ignore imported gradients", async () => {
-			const existingGradients: Gradient[] = [
-				{
-					id: "existing",
-					colorStops: [
-						{
-							color: "#ff0000",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "lighter",
-					createdAt: Date.now(),
-				},
-			];
-			localStorage.setItem(
-				"phase-shift-gradients",
-				JSON.stringify(existingGradients),
-			);
-
-			const newGradients: Gradient[] = [
-				{
-					id: "new",
-					colorStops: [
-						{
-							color: "#00ff00",
-							x: 50,
-							y: 50,
-							intensity: 60,
-							scaleX: 1,
-							scaleY: 1,
-							rotation: 0,
-						},
-					],
-					blendMode: "multiply",
-					createdAt: Date.now(),
-				},
-			];
-			const encoded = encodeGradients(newGradients);
-			window.history.replaceState({}, "", `?gradients=${encoded}`);
-
-			const { result } = renderHook(() => useGradients());
-
-			await waitFor(() => {
-				expect(result.current.pendingImport).not.toBeNull();
-			});
-
-			result.current.handleImportIgnore();
-
-			await waitFor(() => {
-				expect(result.current.pendingImport).toBeNull();
-			});
-
-			expect(result.current.gradients).toHaveLength(1);
-			expect(result.current.gradients[0]?.id).toBe("existing");
-		});
+		expect(result.current.gradients).toHaveLength(1);
+		expect(result.current.gradients[0]?.id).toBe("existing");
+	});
 	});
 });

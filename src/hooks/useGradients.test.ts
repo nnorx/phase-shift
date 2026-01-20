@@ -192,9 +192,10 @@ describe("useGradients", () => {
 				});
 			});
 
-			expect(gradient!).toBeDefined();
-			expect(gradient!.id).toBeDefined();
-			expect(gradient!.blendMode).toBe("multiply");
+			expect(gradient).toBeDefined();
+			if (!gradient) throw new Error("gradient is undefined");
+			expect(gradient.id).toBeDefined();
+			expect(gradient.blendMode).toBe("multiply");
 
 			await waitFor(() => {
 				expect(result.current.gradients).toHaveLength(1);
@@ -247,8 +248,9 @@ describe("useGradients", () => {
 				expect(result.current.gradients).toHaveLength(2);
 			});
 
-			expect(result.current.gradients[0]?.id).toBe(gradient2!.id);
-			expect(result.current.gradients[1]?.id).toBe(gradient1!.id);
+			if (!gradient2 || !gradient1) throw new Error("gradients are undefined");
+			expect(result.current.gradients[0]?.id).toBe(gradient2.id);
+			expect(result.current.gradients[1]?.id).toBe(gradient1.id);
 		});
 	});
 
@@ -278,8 +280,9 @@ describe("useGradients", () => {
 				});
 			});
 
+			if (!gradient) throw new Error("gradient is undefined");
 			act(() => {
-				result.current.updateGradient(gradient!.id, {
+				result.current.updateGradient(gradient.id, {
 					blendMode: "multiply",
 				});
 			});
@@ -319,8 +322,9 @@ describe("useGradients", () => {
 				expect(result.current.gradients).toHaveLength(1);
 			});
 
+			if (!gradient) throw new Error("gradient is undefined");
 			act(() => {
-				result.current.deleteGradient(gradient!.id);
+				result.current.deleteGradient(gradient.id);
 			});
 
 			await waitFor(() => {
@@ -472,194 +476,194 @@ describe("useGradients", () => {
 	});
 
 	describe("import handlers", () => {
-	it("should merge imported gradients", async () => {
-		const existingGradients: Gradient[] = [
-			{
-				id: "existing",
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "lighter",
-				createdAt: Date.now(),
-			},
-		];
-		localStorage.setItem(
-			"phase-shift-gradients",
-			JSON.stringify(existingGradients),
-		);
-
-		const newGradients: Gradient[] = [
-			{
-				id: "new",
-				colorStops: [
-					{
-						color: "#00ff00",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "multiply",
-				createdAt: Date.now(),
-			},
-		];
-		const encoded = encodeGradients(newGradients);
-		window.history.replaceState({}, "", `?gradients=${encoded}`);
-
-		const { result } = renderHook(() => useGradients());
-
-		await waitFor(() => {
-			expect(result.current.pendingImport).not.toBeNull();
-		});
-
-		act(() => {
-			result.current.handleImportMerge();
-		});
-
-		await waitFor(() => {
-			expect(result.current.gradients).toHaveLength(2);
-		});
-
-		expect(result.current.pendingImport).toBeNull();
-	});
-
-	it("should replace all gradients on import", async () => {
-		const existingGradients: Gradient[] = [
-			{
-				id: "existing",
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "lighter",
-				createdAt: Date.now(),
-			},
-		];
-		localStorage.setItem(
-			"phase-shift-gradients",
-			JSON.stringify(existingGradients),
-		);
-
-		const newGradients: Gradient[] = [
-			{
-				id: "new",
-				colorStops: [
-					{
-						color: "#00ff00",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "multiply",
-				createdAt: Date.now(),
-			},
-		];
-		const encoded = encodeGradients(newGradients);
-		window.history.replaceState({}, "", `?gradients=${encoded}`);
-
-		const { result } = renderHook(() => useGradients());
-
-		await waitFor(() => {
-			expect(result.current.pendingImport).not.toBeNull();
-		});
-
-		act(() => {
-			result.current.handleImportReplace();
-		});
-
-		await waitFor(() => {
-			expect(result.current.gradients).toHaveLength(1);
-			expect(result.current.gradients[0]?.colorStops[0]?.color).toBe(
-				"#00ff00",
+		it("should merge imported gradients", async () => {
+			const existingGradients: Gradient[] = [
+				{
+					id: "existing",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+			localStorage.setItem(
+				"phase-shift-gradients",
+				JSON.stringify(existingGradients),
 			);
-		});
 
-		expect(result.current.pendingImport).toBeNull();
-	});
+			const newGradients: Gradient[] = [
+				{
+					id: "new",
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "multiply",
+					createdAt: Date.now(),
+				},
+			];
+			const encoded = encodeGradients(newGradients);
+			window.history.replaceState({}, "", `?gradients=${encoded}`);
 
-	it("should ignore imported gradients", async () => {
-		const existingGradients: Gradient[] = [
-			{
-				id: "existing",
-				colorStops: [
-					{
-						color: "#ff0000",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "lighter",
-				createdAt: Date.now(),
-			},
-		];
-		localStorage.setItem(
-			"phase-shift-gradients",
-			JSON.stringify(existingGradients),
-		);
+			const { result } = renderHook(() => useGradients());
 
-		const newGradients: Gradient[] = [
-			{
-				id: "new",
-				colorStops: [
-					{
-						color: "#00ff00",
-						x: 50,
-						y: 50,
-						intensity: 60,
-						scaleX: 1,
-						scaleY: 1,
-						rotation: 0,
-					},
-				],
-				blendMode: "multiply",
-				createdAt: Date.now(),
-			},
-		];
-		const encoded = encodeGradients(newGradients);
-		window.history.replaceState({}, "", `?gradients=${encoded}`);
+			await waitFor(() => {
+				expect(result.current.pendingImport).not.toBeNull();
+			});
 
-		const { result } = renderHook(() => useGradients());
+			act(() => {
+				result.current.handleImportMerge();
+			});
 
-		await waitFor(() => {
-			expect(result.current.pendingImport).not.toBeNull();
-		});
+			await waitFor(() => {
+				expect(result.current.gradients).toHaveLength(2);
+			});
 
-		act(() => {
-			result.current.handleImportIgnore();
-		});
-
-		await waitFor(() => {
 			expect(result.current.pendingImport).toBeNull();
 		});
 
-		expect(result.current.gradients).toHaveLength(1);
-		expect(result.current.gradients[0]?.id).toBe("existing");
-	});
+		it("should replace all gradients on import", async () => {
+			const existingGradients: Gradient[] = [
+				{
+					id: "existing",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+			localStorage.setItem(
+				"phase-shift-gradients",
+				JSON.stringify(existingGradients),
+			);
+
+			const newGradients: Gradient[] = [
+				{
+					id: "new",
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "multiply",
+					createdAt: Date.now(),
+				},
+			];
+			const encoded = encodeGradients(newGradients);
+			window.history.replaceState({}, "", `?gradients=${encoded}`);
+
+			const { result } = renderHook(() => useGradients());
+
+			await waitFor(() => {
+				expect(result.current.pendingImport).not.toBeNull();
+			});
+
+			act(() => {
+				result.current.handleImportReplace();
+			});
+
+			await waitFor(() => {
+				expect(result.current.gradients).toHaveLength(1);
+				expect(result.current.gradients[0]?.colorStops[0]?.color).toBe(
+					"#00ff00",
+				);
+			});
+
+			expect(result.current.pendingImport).toBeNull();
+		});
+
+		it("should ignore imported gradients", async () => {
+			const existingGradients: Gradient[] = [
+				{
+					id: "existing",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+			localStorage.setItem(
+				"phase-shift-gradients",
+				JSON.stringify(existingGradients),
+			);
+
+			const newGradients: Gradient[] = [
+				{
+					id: "new",
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "multiply",
+					createdAt: Date.now(),
+				},
+			];
+			const encoded = encodeGradients(newGradients);
+			window.history.replaceState({}, "", `?gradients=${encoded}`);
+
+			const { result } = renderHook(() => useGradients());
+
+			await waitFor(() => {
+				expect(result.current.pendingImport).not.toBeNull();
+			});
+
+			act(() => {
+				result.current.handleImportIgnore();
+			});
+
+			await waitFor(() => {
+				expect(result.current.pendingImport).toBeNull();
+			});
+
+			expect(result.current.gradients).toHaveLength(1);
+			expect(result.current.gradients[0]?.id).toBe("existing");
+		});
 	});
 });

@@ -174,7 +174,7 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			let gradient: ReturnType<typeof result.current.addGradient>;
+			let gradient!: ReturnType<typeof result.current.addGradient>;
 			act(() => {
 				gradient = result.current.addGradient({
 					colorStops: [
@@ -209,8 +209,8 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			let gradient1: ReturnType<typeof result.current.addGradient>;
-			let gradient2: ReturnType<typeof result.current.addGradient>;
+			let gradient1!: ReturnType<typeof result.current.addGradient>;
+			let gradient2!: ReturnType<typeof result.current.addGradient>;
 
 			act(() => {
 				gradient1 = result.current.addGradient({
@@ -262,7 +262,7 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			let gradient: ReturnType<typeof result.current.addGradient>;
+			let gradient!: ReturnType<typeof result.current.addGradient>;
 			act(() => {
 				gradient = result.current.addGradient({
 					colorStops: [
@@ -301,7 +301,7 @@ describe("useGradients", () => {
 				expect(result.current.isInitialized).toBe(true);
 			});
 
-			let gradient: ReturnType<typeof result.current.addGradient>;
+			let gradient!: ReturnType<typeof result.current.addGradient>;
 			act(() => {
 				gradient = result.current.addGradient({
 					colorStops: [

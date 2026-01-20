@@ -191,7 +191,11 @@ export function GradientStudio() {
 				<div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
-							<img src="/logo.png" alt="Phase Shift" className="h-10 w-10" />
+							<img
+								src={`${import.meta.env.BASE_URL}logo.png`}
+								alt="Phase Shift"
+								className="h-10 w-10"
+							/>
 							<div>
 								<h1 className="font-bold text-xl">Phase Shift</h1>
 								<p className="text-muted-foreground text-sm">

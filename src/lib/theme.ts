@@ -2,6 +2,13 @@ const THEME_KEY = "theme";
 
 type Theme = "light" | "dark" | "system";
 
+// Extend WindowEventMap to include our custom theme-change event
+declare global {
+	interface WindowEventMap {
+		"theme-change": CustomEvent<Theme>;
+	}
+}
+
 /**
  * Initialize theme based on saved preference or OS setting.
  * Call this once at app startup before React renders.
@@ -47,6 +54,9 @@ export function setTheme(theme: Theme) {
 	} else {
 		document.documentElement.classList.toggle("dark", theme === "dark");
 	}
+
+	// Dispatch custom event for components to listen to theme changes
+	window.dispatchEvent(new CustomEvent("theme-change", { detail: theme }));
 }
 
 /**

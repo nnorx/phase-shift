@@ -1,6 +1,10 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { encodeGradients } from "@/lib/gradient-serialization";
+import {
+	areGradientsEqual,
+	encodeGradients,
+	filterNewGradients,
+} from "@/lib/gradient-serialization";
 import type { Gradient } from "@/types/gradient";
 import { useGradients } from "./useGradients";
 
@@ -472,6 +476,346 @@ describe("useGradients", () => {
 				"Failed to copy URL to clipboard:",
 				expect.any(Error),
 			);
+		});
+	});
+
+	describe("gradient comparison", () => {
+		const baseGradient: Gradient = {
+			id: "test-1",
+			colorStops: [
+				{
+					color: "#ff0000",
+					x: 50,
+					y: 50,
+					intensity: 60,
+					scaleX: 1,
+					scaleY: 1,
+					rotation: 0,
+				},
+			],
+			blendMode: "lighter",
+			createdAt: Date.now(),
+		};
+
+		it("should identify identical gradients with different IDs", () => {
+			const gradient1 = { ...baseGradient, id: "id-1", createdAt: 1000 };
+			const gradient2 = { ...baseGradient, id: "id-2", createdAt: 2000 };
+
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(true);
+		});
+
+		it("should identify gradients with different colors as different", () => {
+			const gradient1 = { ...baseGradient };
+			const firstStop = baseGradient.colorStops[0];
+			if (!firstStop) throw new Error("firstStop is undefined");
+			const gradient2 = {
+				...baseGradient,
+				colorStops: [{ ...firstStop, color: "#00ff00" }],
+			};
+
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(false);
+		});
+
+		it("should identify gradients with different blend modes as different", () => {
+			const gradient1 = { ...baseGradient, blendMode: "lighter" as const };
+			const gradient2 = { ...baseGradient, blendMode: "multiply" as const };
+
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(false);
+		});
+
+		it("should handle rounding differences (50.001 vs 50.00)", () => {
+			const gradient1 = { ...baseGradient };
+			const firstStop = baseGradient.colorStops[0];
+			if (!firstStop) throw new Error("firstStop is undefined");
+			const gradient2 = {
+				...baseGradient,
+				colorStops: [{ ...firstStop, x: 50.001 }],
+			};
+
+			// Should be equal because values are rounded to 2 decimals
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(true);
+		});
+
+		it("should identify gradients with different number of colorStops", () => {
+			const gradient1 = { ...baseGradient };
+			const gradient2 = {
+				...baseGradient,
+				colorStops: [
+					...baseGradient.colorStops,
+					{
+						color: "#00ff00",
+						x: 30,
+						y: 30,
+						intensity: 60,
+						scaleX: 1,
+						scaleY: 1,
+						rotation: 0,
+					},
+				],
+			};
+
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(false);
+		});
+
+		it("should treat undefined blendMode as 'lighter'", () => {
+			const gradient1 = { ...baseGradient, blendMode: "lighter" as const };
+			const gradient2 = { ...baseGradient, blendMode: undefined };
+
+			expect(areGradientsEqual(gradient1, gradient2)).toBe(true);
+		});
+	});
+
+	describe("filter new gradients", () => {
+		it("should filter out duplicate gradients", () => {
+			const existing: Gradient[] = [
+				{
+					id: "existing-1",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+
+			const imported: Gradient[] = [
+				{
+					id: "new-1",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+
+			const result = filterNewGradients(imported, existing);
+			expect(result).toHaveLength(0);
+		});
+
+		it("should keep new gradients", () => {
+			const existing: Gradient[] = [
+				{
+					id: "existing-1",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+
+			const imported: Gradient[] = [
+				{
+					id: "new-1",
+					colorStops: [
+						{
+							color: "#00ff00", // Different color
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+
+			const result = filterNewGradients(imported, existing);
+			expect(result).toHaveLength(1);
+			expect(result[0]?.id).toBe("new-1");
+		});
+
+		it("should handle mix of new and duplicate gradients", () => {
+			const existing: Gradient[] = [
+				{
+					id: "existing-1",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+
+			const imported: Gradient[] = [
+				{
+					id: "new-1",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+				{
+					id: "new-2",
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 30,
+							y: 30,
+							intensity: 70,
+							scaleX: 1.5,
+							scaleY: 1.5,
+							rotation: 45,
+						},
+					],
+					blendMode: "multiply",
+					createdAt: Date.now(),
+				},
+			];
+
+			const result = filterNewGradients(imported, existing);
+			expect(result).toHaveLength(1);
+			expect(result[0]?.id).toBe("new-2");
+		});
+	});
+
+	describe("URL import with duplicate detection", () => {
+		it("should not show import dialog when all gradients are duplicates", async () => {
+			const existingGradients: Gradient[] = [
+				{
+					id: "existing",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+			localStorage.setItem(
+				"phase-shift-gradients",
+				JSON.stringify(existingGradients),
+			);
+
+			// Import the same gradient
+			const encoded = encodeGradients(existingGradients);
+			window.history.replaceState({}, "", `?gradients=${encoded}`);
+
+			const { result } = renderHook(() => useGradients());
+
+			await waitFor(() => {
+				expect(result.current.isInitialized).toBe(true);
+			});
+
+			// Import dialog should NOT be shown
+			expect(result.current.pendingImport).toBeNull();
+
+			// Should still have the original gradient
+			expect(result.current.gradients).toHaveLength(1);
+			expect(result.current.gradients[0]?.id).toBe("existing");
+		});
+
+		it("should show import dialog only for new gradients when mix exists", async () => {
+			const existingGradients: Gradient[] = [
+				{
+					id: "existing",
+					colorStops: [
+						{
+							color: "#ff0000",
+							x: 50,
+							y: 50,
+							intensity: 60,
+							scaleX: 1,
+							scaleY: 1,
+							rotation: 0,
+						},
+					],
+					blendMode: "lighter",
+					createdAt: Date.now(),
+				},
+			];
+			localStorage.setItem(
+				"phase-shift-gradients",
+				JSON.stringify(existingGradients),
+			);
+
+			// Import one duplicate and one new
+			const toImport: Gradient[] = [
+				...existingGradients,
+				{
+					id: "new",
+					colorStops: [
+						{
+							color: "#00ff00",
+							x: 30,
+							y: 30,
+							intensity: 70,
+							scaleX: 1.5,
+							scaleY: 1.5,
+							rotation: 45,
+						},
+					],
+					blendMode: "multiply",
+					createdAt: Date.now(),
+				},
+			];
+			const encoded = encodeGradients(toImport);
+			window.history.replaceState({}, "", `?gradients=${encoded}`);
+
+			const { result } = renderHook(() => useGradients());
+
+			await waitFor(() => {
+				expect(result.current.isInitialized).toBe(true);
+			});
+
+			// Import dialog SHOULD be shown with only the new gradient
+			expect(result.current.pendingImport).not.toBeNull();
+			expect(result.current.pendingImport?.gradients).toHaveLength(1);
+			expect(
+				result.current.pendingImport?.gradients[0]?.colorStops[0]?.color,
+			).toBe("#00ff00");
 		});
 	});
 

@@ -55,6 +55,56 @@ export function encodeGradients(gradients: Gradient[]): string {
 }
 
 /**
+ * Compare two gradients for equality based on content (not ID or timestamp)
+ * Compares colorStops and blendMode, ignoring id and createdAt
+ */
+export function areGradientsEqual(a: Gradient, b: Gradient): boolean {
+	// Compare blend modes (normalize undefined to default "lighter")
+	const blendModeA = a.blendMode || "lighter";
+	const blendModeB = b.blendMode || "lighter";
+	if (blendModeA !== blendModeB) {
+		return false;
+	}
+
+	// Compare colorStops array length
+	if (a.colorStops.length !== b.colorStops.length) {
+		return false;
+	}
+
+	// Compare each colorStop with rounded values (matching encoding precision)
+	return a.colorStops.every((stopA, i) => {
+		const stopB = b.colorStops[i];
+		if (!stopB) return false;
+
+		return (
+			stopA.color === stopB.color &&
+			round(stopA.x) === round(stopB.x) &&
+			round(stopA.y) === round(stopB.y) &&
+			round(stopA.intensity) === round(stopB.intensity) &&
+			round(stopA.scaleX) === round(stopB.scaleX) &&
+			round(stopA.scaleY) === round(stopB.scaleY) &&
+			round(stopA.rotation) === round(stopB.rotation)
+		);
+	});
+}
+
+/**
+ * Filter out gradients that already exist in the collection
+ * Returns only new gradients that aren't duplicates
+ */
+export function filterNewGradients(
+	importedGradients: Gradient[],
+	existingGradients: Gradient[],
+): Gradient[] {
+	return importedGradients.filter(
+		(imported) =>
+			!existingGradients.some((existing) =>
+				areGradientsEqual(imported, existing),
+			),
+	);
+}
+
+/**
  * Decode URL-safe base64 string to gradients array
  * Regenerates id and createdAt fields that were stripped during encoding
  */

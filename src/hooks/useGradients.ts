@@ -8,7 +8,11 @@ import {
 	URL_PARAM,
 } from "@/lib/config";
 import { createGradient } from "@/lib/gradient-factories";
-import { decodeGradients, encodeGradients } from "@/lib/gradient-serialization";
+import {
+	decodeGradients,
+	encodeGradients,
+	filterNewGradients,
+} from "@/lib/gradient-serialization";
 import type { Gradient, GradientConfig } from "@/types/gradient";
 
 /**
@@ -20,6 +24,7 @@ export function useGradients() {
 	const [pendingImport, setPendingImport] = useState<{
 		gradients: Gradient[];
 		show: boolean;
+		filteredCount?: number;
 	} | null>(null);
 
 	// Initialize gradients from localStorage first
@@ -59,10 +64,34 @@ export function useGradients() {
 				});
 			});
 			if (decoded.length > 0) {
-				setPendingImport({
-					gradients: decoded,
-					show: true,
-				});
+				// Filter out gradients that already exist in the collection
+				const newGradients = filterNewGradients(decoded, existingGradients);
+				const filteredCount = decoded.length - newGradients.length;
+
+				// If all gradients are duplicates, don't show import dialog
+				if (newGradients.length === 0) {
+					toast.info("Gradients already imported", {
+						description:
+							"All gradients from this link are already in your collection",
+					});
+					window.history.replaceState({}, "", window.location.pathname);
+					setIsInitialized(true);
+					return;
+				}
+
+				// Show import dialog only for new gradients
+				setPendingImport(
+					filteredCount > 0
+						? {
+								gradients: newGradients,
+								show: true,
+								filteredCount,
+							}
+						: {
+								gradients: newGradients,
+								show: true,
+							},
+				);
 				setIsInitialized(true);
 				return;
 			}

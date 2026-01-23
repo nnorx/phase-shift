@@ -180,6 +180,9 @@ export function GradientStudio() {
 					open={pendingImport.show}
 					gradientCount={pendingImport.gradients.length}
 					existingCount={gradients.length}
+					{...(pendingImport.filteredCount !== undefined && {
+						filteredCount: pendingImport.filteredCount,
+					})}
 					onMerge={handleImportMerge}
 					onReplace={handleImportReplace}
 					onIgnore={handleImportIgnore}

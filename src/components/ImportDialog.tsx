@@ -12,6 +12,7 @@ interface ImportDialogProps {
 	open: boolean;
 	gradientCount: number;
 	existingCount: number;
+	filteredCount?: number;
 	onMerge: () => void;
 	onReplace: () => void;
 	onIgnore: () => void;
@@ -21,6 +22,7 @@ export function ImportDialog({
 	open,
 	gradientCount,
 	existingCount,
+	filteredCount,
 	onMerge,
 	onReplace,
 	onIgnore,
@@ -38,8 +40,15 @@ export function ImportDialog({
 						Import Shared Gradients?
 					</DialogTitle>
 					<DialogDescription>
-						This link contains {gradientCount}{" "}
+						This link contains {gradientCount} new{" "}
 						{gradientCount === 1 ? "gradient" : "gradients"}.
+						{filteredCount && filteredCount > 0 && (
+							<>
+								{" "}
+								({filteredCount} duplicate{filteredCount === 1 ? "" : "s"}{" "}
+								filtered)
+							</>
+						)}
 						{existingCount > 0 && (
 							<> You currently have {existingCount} saved.</>
 						)}

@@ -16,6 +16,7 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { encodeGradients } from "@/lib/gradient-serialization";
+import { getBlendModes } from "@/lib/gradient-validation";
 import { getColorName } from "@/lib/palettes";
 import type { Gradient } from "@/types/gradient";
 import { CanvasRenderer } from "./CanvasRenderer";
@@ -61,6 +62,11 @@ export function GradientCard({
 		}
 	};
 
+	// Get blend mode label
+	const blendModeLabel =
+		getBlendModes().find((mode) => mode.value === gradient.blendMode)?.label ||
+		"Lighter (Additive)";
+
 	return (
 		<Card className="fade-in slide-in-from-bottom-2 group animate-in overflow-hidden p-0 duration-500">
 			<CardHeader className="block p-0">
@@ -75,7 +81,7 @@ export function GradientCard({
 			<CardContent className="flex-1">
 				<div className="flex flex-wrap items-center gap-2">
 					<Badge variant="secondary" className="text-xs">
-						Mesh Gradient
+						{blendModeLabel}
 					</Badge>
 					<Badge variant="outline" className="text-xs">
 						{gradient.colorStops.length}{" "}

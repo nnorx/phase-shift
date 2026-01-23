@@ -559,7 +559,12 @@ describe("useGradients", () => {
 
 		it("should treat undefined blendMode as 'lighter'", () => {
 			const gradient1 = { ...baseGradient, blendMode: "lighter" as const };
-			const gradient2 = { ...baseGradient, blendMode: undefined };
+			const gradient2: Gradient = {
+				id: baseGradient.id,
+				colorStops: baseGradient.colorStops,
+				createdAt: baseGradient.createdAt,
+				// blendMode intentionally omitted to test default behavior
+			};
 
 			expect(areGradientsEqual(gradient1, gradient2)).toBe(true);
 		});

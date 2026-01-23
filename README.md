@@ -16,7 +16,7 @@ A mesh gradient generator with an intuitive drag-and-drop interface. Create beau
 
 💾 **Session Persistence** - Your gradients are automatically saved to localStorage and can be shared via URL
 
-📤 **Flexible Export** - Export gradients as PNG images in multiple sizes (256px to 2048px)
+📤 **Flexible Export** - Export gradients as PNG images in multiple sizes (32px to 2048px)
 
 ✏️ **Edit & Refine** - Modify existing gradients and see changes in real-time
 

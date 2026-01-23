@@ -1,4 +1,4 @@
-import { Plus, Share2 } from "lucide-react";
+import { Dices, Plus, Share2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ImportDialog } from "@/components/ImportDialog";
@@ -24,9 +24,11 @@ import {
 import { useGradients } from "@/hooks/useGradients";
 import {
 	createColorStop,
+	generateRandomPosition,
 	getDefaultGradientConfig,
 } from "@/lib/gradient-factories";
 import { getBlendModes } from "@/lib/gradient-validation";
+import { palettes } from "@/lib/palettes";
 import type { BlendMode, ColorStop, Gradient } from "@/types/gradient";
 import { ColorPalettePicker } from "./ColorPalettePicker";
 import { ColorStopControls } from "./ColorStopControls";
@@ -51,6 +53,9 @@ export function GradientStudio() {
 	const [blendMode, setBlendMode] = useState<BlendMode>("lighter");
 	const [editingGradientId, setEditingGradientId] = useState<string | null>(
 		null,
+	);
+	const [selectedPaletteId, setSelectedPaletteId] = useState<string>(
+		palettes[0]?.id || "sunset",
 	);
 
 	// Handle color selection from palette
@@ -127,6 +132,35 @@ export function GradientStudio() {
 		setColorStops(defaults.colorStops);
 		setBlendMode(defaults.blendMode || "lighter");
 		setEditingGradientId(null);
+	};
+
+	const handleRandomize = () => {
+		// 1. Choose random palette
+		const randomPalette = palettes[Math.floor(Math.random() * palettes.length)];
+		if (!randomPalette) return;
+
+		// 2. Choose 2-5 random colors from that palette
+		const colorCount = Math.floor(Math.random() * 4) + 2; // 2-5 colors
+		const shuffledColors = [...randomPalette.colors].sort(
+			() => Math.random() - 0.5,
+		);
+		const selectedColorHexes = shuffledColors
+			.slice(0, colorCount)
+			.map((c) => c.hex);
+
+		// 3. Create color stops with random positions and intensities (25-65)
+		const newColorStops = selectedColorHexes.map((color) =>
+			createColorStop(color, generateRandomPosition(), 25 + Math.random() * 40),
+		);
+
+		// 4. Update state including palette selection
+		setSelectedPaletteId(randomPalette.id);
+		setSelectedColors(selectedColorHexes);
+		setColorStops(newColorStops);
+
+		toast.success("Random gradient generated!", {
+			description: `Using ${randomPalette.name} palette with ${colorCount} colors`,
+		});
 	};
 
 	const handleShareSession = async () => {
@@ -246,15 +280,26 @@ export function GradientStudio() {
 									<span>
 										{editingGradientId ? "Edit Gradient" : "Create Gradient"}
 									</span>
-									{editingGradientId && (
+									<div className="flex items-center gap-2">
 										<Button
-											variant="ghost"
+											variant="outline"
 											size="sm"
-											onClick={handleNewGradient}
+											onClick={handleRandomize}
+											title="Randomize gradient"
 										>
-											Cancel
+											<Dices className="mr-2 h-4 w-4" />
+											Randomize
 										</Button>
-									)}
+										{editingGradientId && (
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={handleNewGradient}
+											>
+												Cancel
+											</Button>
+										)}
+									</div>
 								</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-6">
@@ -316,6 +361,8 @@ export function GradientStudio() {
 									selectedColors={selectedColors}
 									onColorsChange={handleColorsChange}
 									maxColors={8}
+									selectedPaletteId={selectedPaletteId}
+									onPaletteChange={setSelectedPaletteId}
 								/>
 
 								{/* Action Buttons */}

@@ -21,16 +21,26 @@ interface ColorPalettePickerProps {
 	selectedColors: string[];
 	onColorsChange: (colors: string[]) => void;
 	maxColors?: number;
+	selectedPaletteId?: string;
+	onPaletteChange?: (paletteId: string) => void;
 }
 
 export function ColorPalettePicker({
 	selectedColors,
 	onColorsChange,
 	maxColors = 4,
+	selectedPaletteId,
+	onPaletteChange,
 }: ColorPalettePickerProps) {
-	const [currentPalette, setCurrentPalette] = useState<Palette>(
+	const [internalPalette, setInternalPalette] = useState<Palette>(
 		getDefaultPalette(),
 	);
+
+	// Use controlled palette if provided, otherwise use internal state
+	const currentPalette =
+		selectedPaletteId
+			? palettes.find((p) => p.id === selectedPaletteId) || internalPalette
+			: internalPalette;
 
 	const handleColorClick = (hex: string) => {
 		if (selectedColors.includes(hex)) {
@@ -45,7 +55,13 @@ export function ColorPalettePicker({
 	const handlePaletteChange = (paletteId: string) => {
 		const palette = palettes.find((p) => p.id === paletteId);
 		if (palette) {
-			setCurrentPalette(palette);
+			// If controlled, call the parent's handler
+			if (onPaletteChange) {
+				onPaletteChange(paletteId);
+			} else {
+				// Otherwise update internal state
+				setInternalPalette(palette);
+			}
 		}
 	};
 

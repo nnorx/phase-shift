@@ -37,10 +37,9 @@ export function ColorPalettePicker({
 	);
 
 	// Use controlled palette if provided, otherwise use internal state
-	const currentPalette =
-		selectedPaletteId
-			? palettes.find((p) => p.id === selectedPaletteId) || internalPalette
-			: internalPalette;
+	const currentPalette = selectedPaletteId
+		? palettes.find((p) => p.id === selectedPaletteId) || internalPalette
+		: internalPalette;
 
 	const handleColorClick = (hex: string) => {
 		if (selectedColors.includes(hex)) {

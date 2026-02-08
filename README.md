@@ -26,10 +26,10 @@ A mesh gradient generator with an intuitive drag-and-drop interface. Create beau
 
 ```bash
 # Install dependencies
-yarn install
+pnpm install
 
 # Start development server
-yarn dev
+pnpm dev
 ```
 
 Visit `http://localhost:5173` to start creating gradients!
@@ -94,16 +94,16 @@ src/
 
 | Command | Description |
 |---------|-------------|
-| `yarn dev` | Start development server |
-| `yarn build` | Type-check and build for production |
-| `yarn preview` | Preview production build |
-| `yarn lint` | Check for linting errors |
-| `yarn format` | Auto-fix linting errors and format code |
-| `yarn type-check` | Run TypeScript type checking |
-| `yarn test` | Run tests once |
-| `yarn test:watch` | Run tests in watch mode |
-| `yarn test:coverage` | Run tests with coverage report |
-| `yarn knip` | Find unused code and dependencies |
+| `pnpm dev` | Start development server |
+| `pnpm build` | Type-check and build for production |
+| `pnpm preview` | Preview production build |
+| `pnpm lint` | Check for linting errors |
+| `pnpm format` | Auto-fix linting errors and format code |
+| `pnpm type-check` | Run TypeScript type checking |
+| `pnpm test` | Run tests once |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm test:coverage` | Run tests with coverage report |
+| `pnpm knip` | Find unused code and dependencies |
 
 ## Color Palettes
 
